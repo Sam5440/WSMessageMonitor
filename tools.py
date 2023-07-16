@@ -20,7 +20,7 @@ def get_tail(ws_name):
 
 
 def msg_handle(ws_name, response):
-    return response
+    # return response
     try:
         response = json.loads(response)
         if response["params"].get("message_type"):

@@ -52,7 +52,7 @@ for ws_name, ws_addr in ws_addrs.items():
     ws_connect_tasks.append(ws_connections[ws_name].start_connect)
     recv_tasks.append(ws_connections[ws_name].recv_to_forward())
     # log(f"0：{ws_name} Connected to {ws_addr} successfully!")
-start_server = websockets.serve(server, "localhost", 40018)
+start_server = websockets.serve(server, "localhost", 40018,max_size=10**10)
 asyncio.get_event_loop().run_until_complete(asyncio.gather(start_server))    
 asyncio.get_event_loop().run_until_complete(asyncio.gather(*ws_connect_tasks))
 asyncio.get_event_loop().run_until_complete(asyncio.gather(*recv_tasks))

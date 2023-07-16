@@ -43,6 +43,7 @@ class WebSocketClient:
         self.connection = await websockets.connect(
             self.uri,
             extra_headers=self.extra_headers,
+            max_size=10**10
         )
 
     async def set_self_id(self):
