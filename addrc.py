@@ -5,7 +5,7 @@ import time
 import websockets
 from typing import Union
 from tools import log, get_ws_name, get_tail, msg_handle
-from config import self_id, ws_addrs
+from config import  ws_addrs
 
 # from main import connected
 
@@ -35,11 +35,14 @@ class WebSocketClient:
 
     @property
     def uri(self) -> str:
+        #随机获得一个uri来做负载均衡
         return self.uris[0]
 
     @property
     async def start_connect(self):
+        # 连接，启动！
         await self.set_self_id()
+        log(f"addrL43：{self.name} Connecting to {self.uri} {self.extra_headers}...")
         self.connection = await websockets.connect(
             self.uri,
             extra_headers=self.extra_headers,
@@ -47,28 +50,33 @@ class WebSocketClient:
         )
 
     async def set_self_id(self):
-        while self.self_id == "":
+        # 从gocq的header头获得self_id
+        if self.self_id == "" or self.self_id is None:
             self.self_id = await self.get_self_id()
+        # self.self_id = "2470666214"
+        # self.self_id = await self.get_self_id()
+        log(f"addrL54：{self.name} self_id is {self.self_id}")
         self.extra_headers["X-Self-Id"] = self.self_id
         print(f"0：{self.name} self_id is {self.self_id}")
 
     async def send(self, message):
+        # 向ws推送消息
         await self.connection.send(message)
 
     # @property
     async def recv_to_forward(self):
+        # 接收消息并且转发到gocq
         while True:
             # usually only one ws
             log(f"0:Waiting for response from {self.name}...")
             response = await self.connection.recv()
+            log(self.name)
             log(
                 f"1：Response from {self.name} forwarded to client: {response}",
             )
             response = msg_handle(self.name, response)
             log(f"2：Response from {self.name} forwarded to client: {response} ")
             self.send_to_client(response)
-            # for websocket in self.connected:
-            #     await websocket.send(response)
 
     # async def connect_old(self):
     #     global ws_connections
@@ -77,3 +85,12 @@ class WebSocketClient:
     #         self.uri,
     #         xtra_headers=self.extra_headers,
     #     )
+class YunzaiWs(WebSocketClient):
+    # yunzai 不能带self_id
+    async def set_self_id(self):
+        # await asyncio.sleep(0.1)
+        self.self_id = None
+        # self.self_id = await self.get_self_id()
+        log(f"addrL54：{self.name} self_id is {self.self_id}")
+        self.extra_headers["X-Self-Id"] = self.self_id
+        print(f"0：{self.name} self_id is {self.self_id}")
