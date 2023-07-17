@@ -2,12 +2,12 @@ import datetime, json
 from config import msg_tail, ws_addrs
 
 
-def log(msg):
+def log(msg,level=3):
     # 保存到文件 daily.log
     with open("daily.log", "a",encoding="utf-8") as f:
         now_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         f.write(f"[{now_time}]{msg}\n")
-    if len(msg) < 1_000:
+    if len(msg) < 1_000 and level <= 1:
         print(msg)
 
 
@@ -23,15 +23,16 @@ def msg_handle(ws_name, response):
     # return response
     try:
         response = json.loads(response)
-        if response["params"].get("message_type"):
-            log(f'debug {response["params"]["message"]}')
-            response["params"]["message"].append(
-                {"type": "text", "data": {"text": get_tail(ws_name)}}
-            )
-        if response["params"].get("operation"):
-            response["params"]["operation"]["reply"] += get_tail(ws_name)
+        if response.get("params"):
+            if response["params"].get("message"): #if response["params"].get("message_type"):
+                log(f'debug {response["params"]["message"]}',3)
+                response["params"]["message"].append(
+                    {"type": "text", "data": {"text": get_tail(ws_name)}}
+                )
+            if response["params"].get("operation"):
+                response["params"]["operation"]["reply"] += get_tail(ws_name)
     except KeyError:
-        log("3：Key Error of Response")
+        log("3：Key Error of Response",1)
     except Exception as e:
-        log(e)
+        log(e,1)
     return json.dumps(response)

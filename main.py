@@ -9,6 +9,7 @@ from tools import log, get_ws_name, get_tail, msg_handle
 from config import ws_addrs,debug
 from addrc import WebSocketClient, YunzaiWs
 
+total_count = [0, 0]
 
 # Start:连接gocq的ws server 
 connected,self_id = set(),""
@@ -19,11 +20,11 @@ async def server(websocket):
     try:
         headers = dict(websocket.request_headers)
         self_id = headers["x-self-id"]
-        log(f"H：Headers from client: {headers} ")
+        log(f"H：Headers from client: {headers} ",2)
         async for message in websocket:
             if "1102566608" not in message and debug:
                 continue
-            log(f"0：Received message from client:{type(message)}-{message}")
+            log(f"0：Received message from client:{type(message)}-{message}",2)
             await send_to_other_ws(message)
     finally:
         log("4：Connection closed")
@@ -40,12 +41,16 @@ async def send_to_other_ws(message):
                 await ws.send(message)
                 push_ws.append(ws_name)
             except Exception as e:
-                log(f"Send msg to{ws_name} is missing: {e}")
-        log(f"1：Message forwarded to {push_ws}")
+                log(f"Send msg to{ws_name} is missing: {e}",1)
+        global total_count
+        total_count[1] += 1
+        log(f"1：Msg forwarded to {push_ws}\n Tsend{total_count[0]},Trecv{total_count[1]}",1)
 
 def send_to_client(message):
+    global total_count
     # 消息转发到gocq端
     if connected:
+        total_count[0] += 1
         for ws in connected:
             asyncio.create_task(ws.send(message))
 async def get_self_id():

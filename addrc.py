@@ -32,7 +32,10 @@ class WebSocketClient:
             "user-agent": "CQHttp/4.15.0",
         }
         self.extra_headers.update(default_headers)
-
+        self.msg_cache = []
+        self.connection = None
+        
+        
     @property
     def uri(self) -> str:
         #随机获得一个uri来做负载均衡
@@ -42,7 +45,7 @@ class WebSocketClient:
     async def start_connect(self):
         # 连接，启动！
         await self.set_self_id()
-        log(f"addrL43：{self.name} Connecting to {self.uri} {self.extra_headers}...")
+        log(f"addrL43：{self.name} Connecting to {self.uri} {self.extra_headers}...",3)
         self.connection = await websockets.connect(
             self.uri,
             extra_headers=self.extra_headers,
@@ -55,27 +58,36 @@ class WebSocketClient:
             self.self_id = await self.get_self_id()
         # self.self_id = "2470666214"
         # self.self_id = await self.get_self_id()
-        log(f"addrL54：{self.name} self_id is {self.self_id}")
+        log(f"addrL54：{self.name} self_id is {self.self_id}",3)
         self.extra_headers["X-Self-Id"] = self.self_id
         print(f"0：{self.name} self_id is {self.self_id}")
 
     async def send(self, message):
         # 向ws推送消息
-        await self.connection.send(message)
+        self.msg_cache.append(message)
+        # log(f"msg_cache:{self.msg_cache}")
+        if self.connection:
+            for msg in self.msg_cache:
+                await self.connection.send(msg)
+                await asyncio.sleep(0.1)
+            self.msg_cache = []
+        await asyncio.sleep(0.1)
+        
+            
 
     # @property
     async def recv_to_forward(self):
         # 接收消息并且转发到gocq
         while True:
             # usually only one ws
-            log(f"0:Waiting for response from {self.name}...")
+            log(f"0:Waiting for response from {self.name}...",3)
             response = await self.connection.recv()
-            log(self.name)
+            log(self.name,3)
             log(
-                f"1：Response from {self.name} forwarded to client: {response}",
+                f"1：Response from {self.name} forwarded to client: {response}",2
             )
             response = msg_handle(self.name, response)
-            log(f"2：Response from {self.name} forwarded to client: {response} ")
+            log(f"2：Response from {self.name} forwarded to client: {response} ",3)
             self.send_to_client(response)
 
     # async def connect_old(self):
@@ -91,6 +103,6 @@ class YunzaiWs(WebSocketClient):
         # await asyncio.sleep(0.1)
         self.self_id = None
         # self.self_id = await self.get_self_id()
-        log(f"addrL54：{self.name} self_id is {self.self_id}")
+        log(f"addrL54：{self.name} self_id is {self.self_id}",3)
         self.extra_headers["X-Self-Id"] = self.self_id
         print(f"0：{self.name} self_id is {self.self_id}")
