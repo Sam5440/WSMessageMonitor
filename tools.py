@@ -1,14 +1,15 @@
 import datetime, json
 from config import msg_tail, ws_addrs
+time_start = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
 
-
-def log(msg,level=3):
+def log(msg,level=3,log_file_name=None):
     # 保存到文件 daily.log
-    with open("daily.log", "a",encoding="utf-8") as f:
+    file_name = time_start if log_file_name is None else f"{log_file_name}_{time_start}"
+    with open(f"log/{file_name}.log", "a",encoding="utf-8") as f:
         now_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         f.write(f"[{now_time}]{msg}\n")
     if len(msg) < 1_000 and level <= 1:
-        print(msg)
+        print(f"[{now_time}]{msg}")
 
 
 def get_ws_name(ws_addr):

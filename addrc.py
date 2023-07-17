@@ -34,6 +34,7 @@ class WebSocketClient:
         self.extra_headers.update(default_headers)
         self.msg_cache = []
         self.connection = None
+        self.coro_lock = False
         
         
     @property
@@ -43,14 +44,40 @@ class WebSocketClient:
 
     @property
     async def start_connect(self):
-        # 连接，启动！
-        await self.set_self_id()
-        log(f"addrL43：{self.name} Connecting to {self.uri} {self.extra_headers}...",3)
-        self.connection = await websockets.connect(
-            self.uri,
-            extra_headers=self.extra_headers,
-            max_size=10**10
-        )
+        if not self.coro_lock:
+            self.coro_lock = True
+            try:
+                # 连接，启动！
+                await self.set_self_id()
+                log(f"addrL43：{self.name} Connecting to {self.uri} {self.extra_headers}...",3)
+                self.connection = await websockets.connect(
+                    self.uri,
+                    extra_headers=self.extra_headers,
+                    max_size=10**10
+                )
+                # await asyncio.sleep(3)
+                log(f"addrL56：{self.name} Connected to {self.uri} successfully!", 3)
+                # break  # Add this line
+            except (websockets.exceptions.ConnectionClosed, OSError):
+                log(f"addrL59：Failed to connect to {self.uri}. Retrying in 5 seconds...", 3)
+                await asyncio.sleep(3)  # Add this line
+            except Exception as e:
+                log(f"addrL62：Failed to connect to {self.uri}. Retrying in 5 seconds...", 3)
+                log(e,1)
+            finally:
+                self.coro_lock = False
+                
+                # await asyncio.sleep(3)  # Add this line
+                
+    # async def start_connect(self):
+    #     # 连接，启动！
+    #     await self.set_self_id()
+    #     log(f"addrL43：{self.name} Connecting to {self.uri} {self.extra_headers}...",3)
+    #     self.connection = await websockets.connect(
+    #         self.uri,
+    #         extra_headers=self.extra_headers,
+    #         max_size=10**10
+    #     )
 
     async def set_self_id(self):
         # 从gocq的header头获得self_id
@@ -60,7 +87,7 @@ class WebSocketClient:
         # self.self_id = await self.get_self_id()
         log(f"addrL54：{self.name} self_id is {self.self_id}",3)
         self.extra_headers["X-Self-Id"] = self.self_id
-        print(f"0：{self.name} self_id is {self.self_id}")
+        log(f"addrL79：{self.name} self_id is {self.self_id}",1)
 
     async def send(self, message):
         # 向ws推送消息
@@ -81,7 +108,12 @@ class WebSocketClient:
         while True:
             # usually only one ws
             log(f"0:Waiting for response from {self.name}...",3)
-            response = await self.connection.recv()
+            try:
+                response = await self.connection.recv()
+            except Exception as e:
+                # log(f"recv failed [{self.name}]",1)
+                await asyncio.sleep(1)
+                continue
             log(self.name,3)
             log(
                 f"1：Response from {self.name} forwarded to client: {response}",2

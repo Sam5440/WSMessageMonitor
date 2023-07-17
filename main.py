@@ -40,8 +40,9 @@ async def send_to_other_ws(message):
             try:
                 await ws.send(message)
                 push_ws.append(ws_name)
-            except Exception as e:
+            except Exception as e:#TODO 只捕捉连接异常？
                 log(f"Send msg to{ws_name} is missing: {e}",1)
+                asyncio.create_task(ws_connections[ws_name].start_connect)
         global total_count
         total_count[1] += 1
         log(f"1：Msg forwarded to {push_ws}\n Tsend{total_count[0]},Trecv{total_count[1]}",1)
@@ -51,6 +52,7 @@ def send_to_client(message):
     # 消息转发到gocq端
     if connected:
         total_count[0] += 1
+        log(f"2：Msg forwarded to client: {message}\n Tsend{total_count[0]},Trecv{total_count[1]}",2,"send")
         for ws in connected:
             asyncio.create_task(ws.send(message))
 async def get_self_id():
@@ -73,3 +75,14 @@ asyncio.get_event_loop().run_until_complete(asyncio.gather(start_server))
 asyncio.get_event_loop().run_until_complete(asyncio.gather(*ws_connect_tasks))
 asyncio.get_event_loop().run_until_complete(asyncio.gather(*recv_tasks))
 asyncio.get_event_loop().run_forever()
+# async def recv_main():
+#     ws_connect_tasks = [connect_other_ws_server(ws_addr) for ws_addr in ws_addrs.values()]
+#     await asyncio.gather(*ws_connect_tasks)
+#     while True:  # Add this line
+#         try:
+#             recv_tasks = [recv_to_forward(ws_name,ws) for ws_name,ws in ws_connections.items()]
+#             await asyncio.gather(*recv_tasks)
+#         except websockets.exceptions.ConnectionClosed:
+#             log(f"A websocket connection was closed. Reconnecting...")
+#             ws_connect_tasks = [connect_other_ws_server(ws_addr) for ws_addr in ws_addrs.values()]
+#             await asyncio.gather(*ws_connect_tasks)
