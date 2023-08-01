@@ -96,9 +96,9 @@ class WebSocketClient:
         if self.connection:
             for msg in self.msg_cache:
                 await self.connection.send(msg)
-                await asyncio.sleep(0.1)
+                await asyncio.sleep(0.001)
             self.msg_cache = []
-        await asyncio.sleep(0.1)
+        await asyncio.sleep(0.001)
         
             
 
@@ -112,7 +112,7 @@ class WebSocketClient:
                 response = await self.connection.recv()
             except Exception as e:
                 # log(f"recv failed [{self.name}]",1)
-                await asyncio.sleep(1)
+                await asyncio.sleep(0.001)
                 continue
             log(self.name,3)
             log(
